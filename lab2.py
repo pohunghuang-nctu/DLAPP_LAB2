@@ -1,3 +1,4 @@
+#!/opt/conda/bin/python
 import torch
 import torchvision
 import torchvision.transforms as transforms
@@ -6,6 +7,7 @@ import torch.optim as optim
 import os
 import matplotlib.pyplot as plt
 import numpy as np
+import sys
 
 # ============================= #
 # you can define your own model #
@@ -54,6 +56,7 @@ class ChineseOCR(object):
             'six', 'seven', 'eight', 'nine', 'ten']
 
         self.checkdevice()
+        sys.exit(0)
         self.prepareData()
         self.getModel()
         self.train_acc = self.train()

@@ -56,14 +56,14 @@ class ChineseOCR(object):
             'six', 'seven', 'eight', 'nine', 'ten']
 
         self.checkdevice()
-        sys.exit(0)
         self.prepareData()
         self.getModel()
         self.train_acc = self.train()
         self.saveModel()
         self.test()
-
+        sys.exit(0)
         self.showWeights()
+
 
     def checkdevice(self):
         # To determine if your system supports CUDA
@@ -101,11 +101,13 @@ class ChineseOCR(object):
 
 
         # TODO
-        # self.trainset = torchvision.datasets.ImageFolder(...)
-        # self.testset = torchvision.datasets.ImageFolder(...)
+        self.trainset = torchvision.datasets.ImageFolder(self.in_path, transform=transform_train)
+        self.testset = torchvision.datasets.ImageFolder(self.in_path, transform=transform_test)
 
         self.trainloader = torch.utils.data.DataLoader(self.trainset, batch_size=self.batch_size, shuffle=True)
+        print('Size of train data: %d' % len(self.trainset))
         self.testloader = torch.utils.data.DataLoader(self.testset, batch_size=self.batch_size, shuffle=False)
+        print('Size of test data: %d' % len(self.testset))
         # you can also split validation set
         # self.validloader = torch.utils.data.DataLoader(self.validset, batch_size=self.batch_size, shuffle=True)
         return
@@ -218,7 +220,7 @@ class ChineseOCR(object):
         print('Saving model...')
 
         # only save model parameters
-        torch.save(self.net.state_dict(), './weight.t7')
+        torch.save(self.net.state_dict(), './weight.model.parameter.only.t7')
 
         # you also can store some log information
         state = {
@@ -279,4 +281,4 @@ class ChineseOCR(object):
 
 if __name__ == '__main__':
     # you can adjust your hyperperamers
-    ocr = ChineseOCR('./data', 75, 32, 0.001)
+    ocr = ChineseOCR('../dataset', 75, 32, 0.001)

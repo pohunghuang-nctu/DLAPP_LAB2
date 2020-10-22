@@ -8,6 +8,8 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
+import argparse
+
 
 # ============================= #
 # you can define your own model #
@@ -45,12 +47,13 @@ class LeNet(nn.Module):
 
 class ChineseOCR(object):
     """docstring for ChineseOCR"""
-    def __init__(self, in_path, epoch, batch_size, lr):
+    def __init__(self, args):
         super(ChineseOCR, self).__init__()
-        self.in_path = in_path
-        self.epoch = epoch
-        self.batch_size = batch_size
-        self.lr = lr
+
+        self.args = args
+        self.in_path = args.img_folder
+        self.batch_size = 32
+        self.lr = 0.001
 
         self.classes = ['one', 'two', 'three', 'four', 'five', 
             'six', 'seven', 'eight', 'nine', 'ten']
@@ -58,10 +61,11 @@ class ChineseOCR(object):
         self.checkdevice()
         self.prepareData()
         self.getModel()
-        self.train_acc = self.train()
-        self.saveModel()
+        if args.func == 'train':
+            self.epoch = args.epoch
+            self.train_acc = self.train()
+            self.saveModel()
         self.test()
-        sys.exit(0)
         self.showWeights()
 
 
@@ -87,7 +91,7 @@ class ChineseOCR(object):
         transform_train = transforms.Compose([
             transforms.RandomCrop(128, padding=4),
             transforms.RandomHorizontalFlip(),
-            transforms.RandomRotation(90),
+            transforms.RandomRotation(30),
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (1, 1, 1)),
             # you can apply more augment function
@@ -117,12 +121,15 @@ class ChineseOCR(object):
 
     def getModel(self):
         # Build a Convolution Neural Network
-        self.net = LeNet()
-        print(self.net)
-
-        # Define loss function and optimizer
-        self.criterion = nn.CrossEntropyLoss()
-        self.optimizer = optim.SGD(self.net.parameters(), lr=self.lr, momentum=0.9)
+        if self.args.func == 'train':
+            self.net = LeNet()
+            print(self.net)
+            # Define loss function and optimizer
+            self.criterion = nn.CrossEntropyLoss()
+            self.optimizer = optim.SGD(self.net.parameters(), lr=self.lr, momentum=0.9)
+        elif self.args.func == 'test':
+            self.loadModel(self.args.model_path)
+            self.criterion = nn.CrossEntropyLoss()
         return
         
     def train(self):
@@ -223,7 +230,7 @@ class ChineseOCR(object):
         print('Saving model...')
 
         # only save model parameters
-        torch.save(self.net.state_dict(), './weight.model.parameter.only.t7')
+        torch.save(self.net.state_dict(), os.path.join(self.args.output_path, './weight.model.parameter.only.t7'))
 
         # you also can store some log information
         state = {
@@ -231,10 +238,10 @@ class ChineseOCR(object):
             'acc': self.train_acc,
             'epoch': self.epoch
         }
-        torch.save(state, './weight.t7')
+        torch.save(state, os.path.join(self.args.output_path, './weight.t7'))
 
         # save entire model
-        torch.save(self.net, './model.pt')
+        torch.save(self.net, os.path.join(self.args.output_path, './model.pt'))
         return
 
     def loadModel(self, path):
@@ -253,11 +260,11 @@ class ChineseOCR(object):
 
     def showWeights(self):
         # TODO
-        w_conv1 = self.net.get_weights()[0]
-        w_conv2 = self.net.get_weights()[1]
-        w_fc1 = self.net.get_weights()[2]
-        w_fc2 = self.net.get_weights()[3]
-        w_fc3 = self.net.get_weights()[4]
+        w_conv1 = self.net.conv1.weight.cpu().detach().numpy().flatten()
+        w_conv2 = self.net.conv2.weight.cpu().detach().numpy().flatten()
+        w_fc1 = self.net.fc1.weight.cpu().detach().numpy().flatten()
+        w_fc2 = self.net.fc2.weight.cpu().detach().numpy().flatten()
+        w_fc3 = self.net.fc3.weight.cpu().detach().numpy().flatten()
 
         plt.figure(figsize=(24, 6))
         plt.subplot(1,5,1)
@@ -280,8 +287,29 @@ class ChineseOCR(object):
         plt.title("fc3 weight")
         plt.hist(w_fc3)
 
-        plt.savefig('weights.png')
+        plt.savefig(os.path.join(self.args.output_path, 'weights.png'))
+
+def arg_parse():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--img_folder', dest='img_folder', default='../dataset', help='The input image folder path.')
+    parser.add_argument('--output_folder', dest='output_path', default='./', help='The model and result.')
+    subparser = parser.add_subparsers(dest='func', help='Sub commands')
+    train_args = subparser.add_parser('train', help='Train(then test) and output model.')
+    train_args.add_argument('--epoch', dest='epoch', type=int, default=75, help='The number of epoch.')
+    test_args = subparser.add_parser('test', help='Give input and test')
+    test_args.add_argument('--model', dest='model_path', default='./model.pt', help='The path to saved model and results.')
+    
+    args = parser.parse_args()
+    return args
+
+
+def main():
+    args = arg_parse()
+    print(args.func)
+    # you can adjust your hyperperamers
+    # ocr = ChineseOCR('../dataset', 75, 32, 0.001)
+    ocr = ChineseOCR(args)
+
 
 if __name__ == '__main__':
-    # you can adjust your hyperperamers
-    ocr = ChineseOCR('../dataset', 75, 32, 0.001)
+    main()

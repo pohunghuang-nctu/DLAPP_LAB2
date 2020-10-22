@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys
 import argparse
+import json
 
 
 # ============================= #
@@ -65,9 +66,8 @@ class ChineseOCR(object):
             self.epoch = args.epoch
             self.train_acc = self.train()
             self.saveModel()
+            self.showWeights()
         self.test()
-        self.showWeights()
-
 
     def checkdevice(self):
         # To determine if your system supports CUDA
@@ -217,8 +217,14 @@ class ChineseOCR(object):
 
         print('Total accuracy is: {:4f}% and loss is: {:3.3f}'.format(100 * correct/len(self.testset), running_loss/iter_count))
         print('For each class in dataset:')
+        records = {}
         for i in range(len(self.classes)):
             print('Accruacy for {:18s}: {:4.2f}%'.format(self.classes[i], 100 * class_correct[i]/class_total[i]))
+            records[self.classes[i]] = {'acc': 100 * class_correct[i]/class_total[i],
+                                        'correct': class_correct[i],
+                                        'total': class_total[i]}
+        with open(os.path.join(self.args.output_path, 'records.json'), 'w') as ofile:
+            ofile.write(json.dumps(records, indent=4))
 
     def saveModel(self):
         # After training , save the model first

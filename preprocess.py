@@ -2,12 +2,13 @@
 import cv2
 import sys
 import numpy as np
-import os
+import os, shutil
 
 
 def main():
     input_path = sys.argv[1]
     output_path = sys.argv[2]
+    times = int(sys.argv[3])
     img_folder = os.path.join(input_path, 'img')
     anno_folder = os.path.join(input_path, 'anno')
     # check if img and annotation matched. 
@@ -25,6 +26,17 @@ def main():
                 print('Missing annotation for %s' % item)
     # print(img_list)
     # print(anno_list)
+    # clear output folder first
+    for item in os.listdir(output_path):
+        full_path = os.path.join(output_path, item)
+        try:
+            if os.path.isfile(full_path):
+                os.unlink(full_path)
+            elif os.path.isdir(full_path):
+                shutil.rmtree(full_path)
+                print('removed folder %s' % item)
+        except Exception as e:
+            print('Fail to delete %s. Reason: %s' % (item, e))
 
     # read jpg and crop accroding to txt file
     for i in range(0, len(img_list)):
@@ -32,7 +44,7 @@ def main():
         img = cv2.imread(img_list[i])
         img_name, ext = os.path.splitext(os.path.basename(img_list[i]))
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        print('shape: [%d, %d]' % (gray.shape[0], gray.shape[1]))
+        # print('shape: [%d, %d]' % (gray.shape[0], gray.shape[1]))
         src_h = gray.shape[0]
         src_w = gray.shape[1]
         class_counter = {}
@@ -54,16 +66,18 @@ def main():
                 LT_y = np.uint64(np.ceil(c_y - (h/2)))
                 RB_x = np.uint64(np.floor(c_x + (w/2)))
                 RB_y = np.uint64(np.floor(c_y + (h/2)))
-                print('(%d, %d) - (%d, %d)' % (LT_x, LT_y, RB_x, RB_y))
+                # print('(%d, %d) - (%d, %d)' % (LT_x, LT_y, RB_x, RB_y))
                 crop = gray[LT_y:RB_y, LT_x:RB_x]
                 crop_128 = cv2.resize(crop, (128, 128))
                 if class_id not in class_counter:
                     class_counter[class_id] = 1
                 else:
                     class_counter[class_id] += 1
-                crop_name = '%s_%d_%d%s' % (img_name, class_id, class_counter[class_id], ext)
-                crop_path = os.path.join(crop_folder, crop_name)
-                cv2.imwrite(crop_path, crop_128)
+                # for future data argumentation, we save same data 10 times. 
+                for i in range(0, times):
+                    crop_name = '%s_%d_%d_%d%s' % (img_name, class_id, class_counter[class_id], i, ext)
+                    crop_path = os.path.join(crop_folder, crop_name)
+                    cv2.imwrite(crop_path, crop_128)
                 
 
 if __name__ == '__main__':

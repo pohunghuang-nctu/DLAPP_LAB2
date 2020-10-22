@@ -87,6 +87,7 @@ class ChineseOCR(object):
         transform_train = transforms.Compose([
             transforms.RandomCrop(128, padding=4),
             transforms.RandomHorizontalFlip(),
+            transforms.RandomRotation(90),
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (1, 1, 1)),
             # you can apply more augment function
@@ -106,8 +107,10 @@ class ChineseOCR(object):
 
         self.trainloader = torch.utils.data.DataLoader(self.trainset, batch_size=self.batch_size, shuffle=True)
         print('Size of train data: %d' % len(self.trainset))
+        print('Size of train loader: %d' % len(self.trainloader))
         self.testloader = torch.utils.data.DataLoader(self.testset, batch_size=self.batch_size, shuffle=False)
         print('Size of test data: %d' % len(self.testset))
+        print('Size of test loader: %d' % len(self.testloader))
         # you can also split validation set
         # self.validloader = torch.utils.data.DataLoader(self.validset, batch_size=self.batch_size, shuffle=True)
         return
@@ -250,11 +253,11 @@ class ChineseOCR(object):
 
     def showWeights(self):
         # TODO
-        # w_conv1 = ...
-        # w_conv2 = ...
-        # w_fc1 = ...
-        # w_fc2 = ...
-        # w_fc3 = ...
+        w_conv1 = self.net.get_weights()[0]
+        w_conv2 = self.net.get_weights()[1]
+        w_fc1 = self.net.get_weights()[2]
+        w_fc2 = self.net.get_weights()[3]
+        w_fc3 = self.net.get_weights()[4]
 
         plt.figure(figsize=(24, 6))
         plt.subplot(1,5,1)
